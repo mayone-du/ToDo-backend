@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:13.3-alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+  app:
+    build: .
+    tty: true
+    stdin_open: true
+    volumes:
+      - .:/workdir
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db

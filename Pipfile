@@ -1,0 +1,29 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[packages]
+cloudinary = "*"
+dj-database-url = "*"
+django = "*"
+django-cloudinary-storage = "*"
+django-cors-headers = "*"
+django-filter = "*"
+django-graphql-social-auth = "*"
+google-api-python-client = "*"
+graphene = "*"
+graphene-django = "*"
+graphene-file-upload = "*"
+pillow = "*"
+psycopg2-binary = "*"
+python-decouple = "*"
+channels = "*"
+graphql-ws = "*"
+
+[dev-packages]
+flake8 = "*"
+yapf = "*"
+
+[requires]
+python_version = "3.9"
