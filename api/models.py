@@ -11,18 +11,26 @@ def upload_task_path(instance, filename):
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, username, email, password=None):
+    def create_user(
+        self,
+        **kwargs,
+    ):
         try:
+            email = kwargs.get('email')
+            username = kwargs.get('username')
+            password = kwargs.get('password')
             if not email:
                 raise ValueError('email is must')
-            user = self.model(email=self.normalize_email(email))
-            if username is not None:
-                user.username = username
+            user = self.model(email=self.normalize_email(email),
+                              username=username)
             user.set_password(password)
             user.save(using=self._db)
-            # ユーザー作成時にメールを送信
-            send_mail(subject='サンプルアプリ | 本登録のお知らせ', message=f'ユーザー作成時にメール送信しています' + email, from_email="sample@email.com",
-                recipient_list=[email], fail_silently=False)
+            # ユーザー作成時にメールを送信 superuser作成時はコメントアウト
+            send_mail(subject='サンプルアプリ | 本登録のお知らせ',
+                      message=f'ユーザー作成時にメール送信しています' + email,
+                      from_email="sample@email.com",
+                      recipient_list=[email],
+                      fail_silently=False)
             return user
         except:
             raise ValueError('create_user_error')
@@ -54,14 +62,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Task(models.Model):
     create_user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, related_name='target_user',
+        settings.AUTH_USER_MODEL, related_name='create_user',
         on_delete=models.CASCADE
     )
-    title = models.CharField(max_length=1000, default='',null=False, blank=False)
+    title = models.CharField(max_length=100, default='', null=False, blank=False)
+    content = models.CharField(max_length=1000, default='', null=True, blank=True)
     task_image = models.ImageField(
         blank=True, null=True, upload_to=upload_task_path)
     is_done = models.BooleanField(null=False, blank=False, default=False)
     created_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.create_user
+        return self.title

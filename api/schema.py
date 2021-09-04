@@ -36,6 +36,7 @@ class TaskNode(DjangoObjectType):
 class CreateTaskMutation(relay.ClientIDMutation):
     class Input:
         title = graphene.String(required=True)
+        content = graphene.String(required=False)
         task_image = Upload(required=False)
     
     task = graphene.Field(TaskNode)
@@ -52,12 +53,15 @@ class CreateTaskMutation(relay.ClientIDMutation):
 
 
 class Mutation(graphene.ObjectType):
+    create_task = CreateTaskMutation.Field()
     social_auth = graphql_social_auth.SocialAuth.Field()
 
 
 class Query(graphene.ObjectType):
     user = graphene.Field(UserNode, id=graphene.NonNull(graphene.ID))
     all_users = DjangoFilterConnectionField(UserNode)
+
+    todo = graphene.Field(TaskNode, id=graphene.NonNull(graphene.ID))
 
     @validate_token
     def resolve_user(self, info, **kwargs):
@@ -69,6 +73,10 @@ class Query(graphene.ObjectType):
 
     def resolve_all_users(self, info, **kwargs):
         return get_user_model().objects.all()
+
+
+    def resolve_task(self, info, id):
+        pass
 
 class Subscription(graphene.ObjectType):
     count_seconds = graphene.Float(up_to=graphene.Int())

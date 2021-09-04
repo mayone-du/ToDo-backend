@@ -59,6 +59,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
+
 ROOT_URLCONF = 'project.urls'
 
 
@@ -86,6 +93,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'project.wsgi.application'
 ASGI_APPLICATION = 'graphql_ws.django.routing.application'
+# ASGI_APPLICATION = 'project.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
