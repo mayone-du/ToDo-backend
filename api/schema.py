@@ -9,7 +9,7 @@ from graphene_django.types import DjangoObjectType
 from graphene_file_upload.scalars import Upload
 from graphql_relay import from_global_id
 
-from api.validation import validate_token
+from api.decorators import validate_token
 
 from .models import Task, User
 
@@ -22,62 +22,83 @@ class UserNode(DjangoObjectType):
             'email': ['exact', 'icontains'],
             'is_staff': ['exact']
         }
-        interfaces = (relay.Node,)
+        interfaces = (relay.Node, )
 
 
 class TaskNode(DjangoObjectType):
     class Meta:
         model = Task
-        filter_fields = {
-            'title': ['exact', 'icontains']
-        }
-        interfaces = (relay.Node,)
+        filter_fields = {'title': ['exact', 'icontains']}
+        interfaces = (relay.Node, )
 
+
+# タスクの作成
 class CreateTaskMutation(relay.ClientIDMutation):
     class Input:
         title = graphene.String(required=True)
         content = graphene.String(required=False)
         task_image = Upload(required=False)
-    
+
     task = graphene.Field(TaskNode)
 
     @validate_token
     def mutate_and_get_payload(root, info, **input):
-        current_user = get_user_model().objects.get(email=input.get('login_user_email'))
-        task  = Task(
+        current_user = get_user_model().objects.get(
+            email=input.get('request_user_email'))
+        title = input.get('title')
+        content = input.get('content')
+        task = Task(
             create_user=current_user.id,
-            title=input.get('title'),
+            title=title,
         )
+        if content is not None:
+            task.content = content
+        task.save()
         return CreateTaskMutation(task=task)
 
 
-
+# ミューテーション
 class Mutation(graphene.ObjectType):
-    create_task = CreateTaskMutation.Field()
+    # OAuth
     social_auth = graphql_social_auth.SocialAuth.Field()
 
+    # タスク
+    create_task = CreateTaskMutation.Field()
 
+
+# クエリ
 class Query(graphene.ObjectType):
+    # ユーザー
     user = graphene.Field(UserNode, id=graphene.NonNull(graphene.ID))
     all_users = DjangoFilterConnectionField(UserNode)
 
-    todo = graphene.Field(TaskNode, id=graphene.NonNull(graphene.ID))
+    # タスク
+    task = graphene.Field(TaskNode, id=graphene.NonNull(graphene.ID))
+    my_all_tasks = DjangoFilterConnectionField(TaskNode)
 
     @validate_token
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
         # ↓デコレーターで追加されたemailにアクセス
-        email = kwargs.get('login_user_email')
+        email = kwargs.get('request_user_email')
         return get_user_model().objects.get(email=email)
         # return get_user_model().objects.get(id=from_global_id(id)[1])
 
     def resolve_all_users(self, info, **kwargs):
         return get_user_model().objects.all()
 
-
-    def resolve_task(self, info, id):
+    # タスク
+    def resolve_task(self, info, **kwargs):
         pass
 
+    @validate_token
+    def resolve_my_all_tasks(self, info, **kwargs):
+        login_user = get_user_model().objects.get(email=kwargs.get('request_user_email'))
+        all_tasks = Task.objects.all()
+        return all_tasks.filter(create_user=login_user.id)
+
+
+# サブスクリプション
 class Subscription(graphene.ObjectType):
     count_seconds = graphene.Float(up_to=graphene.Int())
 

@@ -3,12 +3,13 @@ from google.oauth2 import id_token
 
 
 # フロントからのリクエストを受け取り、headersのauthorizationからid_token（idToken）を受け取る。
-# 受け取ったトークンを解析して、トークンが有効であるかを調べる。
+# 受け取ったトークンを解析して、トークンが有効であるかを調べる。有効であった場合は、キーワード引数にrequest_user_emailというキーでemailを入れる
 def validate_token(function):
     def validate(root, info, **kwargs):
         print(kwargs)
         # Bearer token... の形式でトークンを受け取る。
         authorization = info.context.headers['authorization']
+        print(authorization)
         # headersのauthorizationが空だった場合はエラー処理
         if authorization == '':
             raise ValueError('401 Unauthorized')
@@ -16,7 +17,6 @@ def validate_token(function):
         if token_type != 'Bearer':
             raise ValueError('not Bearer token!')
         token = authorization[7:]
-        # print(token)
         try:
             # Specify the CLIENT_ID of the app that accesses the backend:
             id_info = id_token.verify_oauth2_token(token, requests.Request())
@@ -34,8 +34,9 @@ def validate_token(function):
             # userid = id_info['sub']
 
             # キーワード引数にemailを追加
-            kwargs['login_user_email'] = id_info['email']
+            kwargs['request_user_email'] = id_info['email']
             return function(root, info, **kwargs)
         except ValueError:
             raise ValueError('token is invalid')
+
     return validate
