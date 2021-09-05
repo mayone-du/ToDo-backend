@@ -6,10 +6,10 @@ from google.oauth2 import id_token
 # 受け取ったトークンを解析して、トークンが有効であるかを調べる。有効であった場合は、キーワード引数にrequest_user_emailというキーでemailを入れる
 def validate_token(function):
     def validate(root, info, **kwargs):
-        print(kwargs)
+        # print(kwargs)
         # Bearer token... の形式でトークンを受け取る。
         authorization = info.context.headers['authorization']
-        print(authorization)
+        # print(authorization)
         # headersのauthorizationが空だった場合はエラー処理
         if authorization == '':
             raise ValueError('401 Unauthorized')

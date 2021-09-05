@@ -89,11 +89,14 @@ class Query(graphene.ObjectType):
 
     # タスク
     def resolve_task(self, info, **kwargs):
-        pass
+        id = kwargs.get('id')
+        task = Task.objects.get(id=from_global_id(id)[1])
+        return task
 
     @validate_token
     def resolve_my_all_tasks(self, info, **kwargs):
-        login_user = get_user_model().objects.get(email=kwargs.get('request_user_email'))
+        login_user = get_user_model().objects.get(
+            email=kwargs.get('request_user_email'))
         all_tasks = Task.objects.all()
         return all_tasks.filter(create_user=login_user.id)
 
