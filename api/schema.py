@@ -47,16 +47,36 @@ class CreateTaskMutation(relay.ClientIDMutation):
             current_user = get_user_model().objects.get(
                 email=info.context.user.email)
             title = input.get('title')
+            # タスクのタイトルが空文字だったらエラー
+            if title == '':
+                raise ValueError('title is must')
             # ForeignKeyなどは、ユーザーにそのままユーザーモデルを入れるか、create_user_id = current_user.idなどとする
             task = Task(create_user=current_user,
                         title=title,
-                        content="",
+                        content="task content",
                         is_done=False)
             print(task)
             task.save()
             return CreateTaskMutation(task=task)
         except:
             raise ValueError('CreateTaskError')
+
+
+# タスクの削除
+class DeleteTaskMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+
+    task = graphene.Field(TaskNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            task = Task.objects.get(id=from_global_id(input.get('id'))[1])
+            task.delete()
+            return DeleteTaskMutation(task=task)
+        except:
+            raise ValueError('DeleteTaskError')
 
 
 # ミューテーション
@@ -66,6 +86,7 @@ class Mutation(graphene.ObjectType):
 
     # タスク
     create_task = CreateTaskMutation.Field()
+    delete_task = DeleteTaskMutation.Field()
 
 
 # クエリ
@@ -100,8 +121,8 @@ class Query(graphene.ObjectType):
     def resolve_my_all_tasks(self, info, **kwargs):
         login_user = get_user_model().objects.get(
             email=info.context.user.email)
-        all_tasks = Task.objects.all()
-        return all_tasks.filter(create_user=login_user.id)
+        my_all_tasks = Task.objects.filter(create_user=login_user)
+        return my_all_tasks
 
 
 # サブスクリプション
