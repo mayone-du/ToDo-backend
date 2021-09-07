@@ -20,7 +20,6 @@ def validate_token(function):
         try:
             # Specify the CLIENT_ID of the app that accesses the backend:
             id_info = id_token.verify_oauth2_token(token, requests.Request())
-            # print(id_info)
             # Or, if multiple clients access the backend server:
             # id_info = id_token.verify_oauth2_token(token, requests.Request())
             # if id_info['aud'] not in [CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]:
@@ -33,8 +32,8 @@ def validate_token(function):
             # ID token is valid. Get the user's Google Account ID from the decoded token.
             # userid = id_info['sub']
 
-            # キーワード引数にemailを追加
-            kwargs['request_user_email'] = id_info['email']
+            # info.context.user.emailにリクエストをしたユーザーのemailを追加
+            info.context.user.email = id_info['email']
             return function(root, info, **kwargs)
         except ValueError:
             raise ValueError('token is invalid')
