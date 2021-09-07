@@ -55,11 +55,41 @@ class CreateTaskMutation(relay.ClientIDMutation):
                         title=title,
                         content="task content",
                         is_done=False)
-            print(task)
             task.save()
             return CreateTaskMutation(task=task)
         except:
             raise ValueError('CreateTaskError')
+
+
+# タスクの更新
+class UpdateTaskMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+        title = graphene.String(required=False)
+        content = graphene.String(required=False)
+        is_done = graphene.Boolean(required=False)
+        task_image = Upload(required=False)
+
+    task = graphene.Field(TaskNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            title = input.get('title')
+            content = input.get('content')
+            is_done = input.get('is_done')
+            task_image = input.get('task_image')
+            task = Task.objects.get(id=from_global_id(input.get('id'))[1])
+            if title is not None and title != '':
+                task.title = title
+            if content is not None:
+                task.content = content
+            if is_done is not None:
+                task.is_done = is_done
+            task.save()
+            return UpdateTaskMutation(task=task)
+        except:
+            raise ValueError('UpdateTaskError')
 
 
 # タスクの削除
@@ -86,6 +116,7 @@ class Mutation(graphene.ObjectType):
 
     # タスク
     create_task = CreateTaskMutation.Field()
+    update_task = UpdateTaskMutation.Field()
     delete_task = DeleteTaskMutation.Field()
 
 
