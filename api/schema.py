@@ -11,7 +11,7 @@ from graphql_relay import from_global_id
 
 from api.decorators import validate_token
 
-from .models import Task, User
+from .models import Profile, Task, User
 
 
 class UserNode(DjangoObjectType):
@@ -20,9 +20,19 @@ class UserNode(DjangoObjectType):
         filter_fields = {
             'username': ['exact', 'icontains'],
             'email': ['exact', 'icontains'],
-            'is_staff': ['exact']
+            'is_staff': ['exact'],
+            'is_superuser': ['exact'],
         }
         interfaces = (relay.Node, )
+
+
+class ProfileNode(DjangoObjectType):
+    class Meta:
+        model = Profile
+        filter_fields = {
+            'github_username': ['exact', 'icontains'],
+            'twitter_username': ['exact', 'icontains'],
+        }
 
 
 class TaskNode(DjangoObjectType):
@@ -86,6 +96,8 @@ class UpdateTaskMutation(relay.ClientIDMutation):
                 task.content = content
             if is_done is not None:
                 task.is_done = is_done
+            if task_image is not None:
+                task.task_image = task_image
             task.save()
             return UpdateTaskMutation(task=task)
         except:

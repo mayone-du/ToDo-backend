@@ -64,22 +64,46 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
+# ユーザーに1対1で紐づくプロフィール
+class Profile(models.Model):
+    # 紐付いているユーザー
+    related_user = models.OneToOneField(settings.AUTH_USER_MODEL,
+                                        related_name='related_user',
+                                        on_delete=models.CASCADE)
+    # 表示名
+    profile_name = models.CharField(max_length=20)
+    # 自己紹介
+    self_introduction = models.CharField(max_length=200, null=True, blank=True)
+    # GitHubとTwitterのユーザーネーム
+    github_username = models.CharField(max_length=30, null=True, blank=True)
+    twitter_username = models.CharField(max_length=30, null=True, blank=True)
+    # 自分のWebサイトのURL
+    website_url = models.URLField(null=True, blank=True)
+
+
+# タスク
 class Task(models.Model):
+    # 作成したユーザー
     create_user = models.ForeignKey(settings.AUTH_USER_MODEL,
                                     related_name='create_user',
                                     on_delete=models.CASCADE)
+    # タスクのタイトル
     title = models.CharField(max_length=100,
                              default='',
                              null=False,
                              blank=False)
+    # 内容
     content = models.CharField(max_length=1000,
                                default='',
                                null=True,
                                blank=True)
+    # 画像
     task_image = models.ImageField(blank=True,
                                    null=True,
                                    upload_to=upload_task_path)
+    # 完了しているかのフラグ
     is_done = models.BooleanField(null=False, blank=False, default=False)
+    # 作成日時
     created_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
