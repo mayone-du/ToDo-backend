@@ -14,6 +14,7 @@ from api.decorators import validate_token
 from .models import Profile, Task, User
 
 
+# ユーザー
 class UserNode(DjangoObjectType):
     class Meta:
         model = User
@@ -26,20 +27,56 @@ class UserNode(DjangoObjectType):
         interfaces = (relay.Node, )
 
 
+# プロフィール
 class ProfileNode(DjangoObjectType):
     class Meta:
         model = Profile
         filter_fields = {
+            'self_introduction': ['exact', 'icontains'],
             'github_username': ['exact', 'icontains'],
             'twitter_username': ['exact', 'icontains'],
         }
 
 
+# タスク
 class TaskNode(DjangoObjectType):
     class Meta:
         model = Task
         filter_fields = {'title': ['exact', 'icontains']}
         interfaces = (relay.Node, )
+
+
+# プロフィールの作成
+class CreateProfileMutation(relay.ClientIDMutation):
+    class Input:
+        user_id = graphene.ID(required=True)
+        self_introduction = graphene.String(required=False)
+        github_username = graphene.String(required=False)
+        twitter_username = graphene.String(required=False)
+
+    profile = graphene.Field(ProfileNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            user_id = input.get('user_id')
+            self_introduction = input.get('self_introduction')
+            github_username = input.get('github_username')
+            twitter_username = input.get('twitter_username')
+
+            profile = Profile(related_user=get_user_model().objects.get(
+                id=user_id))
+
+            if self_introduction is not None:
+                profile.self_introduction = self_introduction
+            if github_username is not None:
+                profile.github_username = github_username
+            if twitter_username is not None:
+                profile.twitter_username = twitter_username
+            profile.save()
+            return CreateProfile(profile=profile)
+        except:
+            raise ValueError('create_profile_error')
 
 
 # タスクの作成
@@ -125,6 +162,9 @@ class DeleteTaskMutation(relay.ClientIDMutation):
 class Mutation(graphene.ObjectType):
     # OAuth
     social_auth = graphql_social_auth.SocialAuth.Field()
+
+    # プロフィール
+    create_profile = CreateProfileMutation.Field()
 
     # タスク
     create_task = CreateTaskMutation.Field()
