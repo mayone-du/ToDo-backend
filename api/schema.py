@@ -51,6 +51,7 @@ class TaskNode(DjangoObjectType):
 class CreateProfileMutation(relay.ClientIDMutation):
     class Input:
         user_id = graphene.ID(required=True)
+        profile_name = graphene.String(required=True)
         self_introduction = graphene.String(required=False)
         github_username = graphene.String(required=False)
         twitter_username = graphene.String(required=False)
@@ -61,6 +62,7 @@ class CreateProfileMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(root, info, **input):
         try:
             user_id = input.get('user_id')
+            profile_name = input.get('profile_name')
             self_introduction = input.get('self_introduction')
             github_username = input.get('github_username')
             twitter_username = input.get('twitter_username')
@@ -84,6 +86,7 @@ class CreateProfileMutation(relay.ClientIDMutation):
 class UpdateProfileMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
+        profile_name = graphene.String(required=True)
         self_introduction = graphene.String(required=False)
         github_username = graphene.String(required=False)
         twitter_username = graphene.String(required=False)
@@ -94,6 +97,7 @@ class UpdateProfileMutation(relay.ClientIDMutation):
     def mutate_and_get_payload(root, info, **input):
         try:
             id = input.get('id')
+            profile_name = input.get('profile_name')
             self_introduction = input.get('self_introduction')
             github_username = input.get('github_username')
             twitter_username = input.get('twitter_username')

@@ -60,7 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.email
 
 
@@ -79,6 +79,9 @@ class Profile(models.Model):
     twitter_username = models.CharField(max_length=30, null=True, blank=True)
     # 自分のWebサイトのURL
     website_url = models.URLField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.profile_name
 
 
 # タスク
@@ -106,5 +109,5 @@ class Task(models.Model):
     # 作成日時
     created_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
