@@ -3,6 +3,7 @@ import asyncio
 import graphene
 import graphql_social_auth
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from graphene import relay
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.types import DjangoObjectType
@@ -74,9 +75,41 @@ class CreateProfileMutation(relay.ClientIDMutation):
             if twitter_username is not None:
                 profile.twitter_username = twitter_username
             profile.save()
-            return CreateProfile(profile=profile)
+            return CreateProfileMutation(profile=profile)
         except:
             raise ValueError('create_profile_error')
+
+
+# プロフィールの更新
+class UpdateProfileMutation(relay.ClientIDMutation):
+    class Input:
+        id = graphene.ID(required=True)
+        self_introduction = graphene.String(required=False)
+        github_username = graphene.String(required=False)
+        twitter_username = graphene.String(required=False)
+
+    profile = graphene.Field(ProfileNode)
+
+    @validate_token
+    def mutate_and_get_payload(root, info, **input):
+        try:
+            id = input.get('id')
+            self_introduction = input.get('self_introduction')
+            github_username = input.get('github_username')
+            twitter_username = input.get('twitter_username')
+
+            profile = Profile(related_user=get_user_model().objects.get(id=id))
+
+            if self_introduction is not None:
+                profile.self_introduction = self_introduction
+            if github_username is not None:
+                profile.github_username = github_username
+            if twitter_username is not None:
+                profile.twitter_username = twitter_username
+            profile.save()
+            return UpdateProfileMutation(profile=profile)
+        except:
+            raise ValueError('update_profile_error')
 
 
 # タスクの作成
@@ -134,7 +167,7 @@ class UpdateTaskMutation(relay.ClientIDMutation):
             if is_done is not None:
                 task.is_done = is_done
             if task_image is not None:
-                task.task_image = task_image
+                task.task_image = task_image[0]
             task.save()
             return UpdateTaskMutation(task=task)
         except:
@@ -165,6 +198,7 @@ class Mutation(graphene.ObjectType):
 
     # プロフィール
     create_profile = CreateProfileMutation.Field()
+    update_profile = UpdateProfileMutation.Field()
 
     # タスク
     create_task = CreateTaskMutation.Field()
@@ -179,10 +213,17 @@ class Query(graphene.ObjectType):
     all_users = DjangoFilterConnectionField(UserNode)
     my_user_info = graphene.Field(UserNode)
 
+    # プロフィール
+    profile = graphene.Field(ProfileNode, id=graphene.NonNull(graphene.ID))
+    my_profile = graphene.Field(ProfileNode)
+
     # タスク
     task = graphene.Field(TaskNode, id=graphene.NonNull(graphene.ID))
     my_all_tasks = DjangoFilterConnectionField(TaskNode)
 
+    #--- リゾルバー ---#
+
+    # ユーザーのリゾルバー
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
         return get_user_model().objects.get(id=from_global_id(id)[1])
@@ -194,7 +235,20 @@ class Query(graphene.ObjectType):
     def resolve_my_user_info(self, info, **kwargs):
         return get_user_model().objects.get(email=info.context.user.email)
 
-    # タスク
+    # プロフィールのリゾルバー
+    def resolve_profile(self, info, **kwargs):
+        id = kwargs.get('id')
+        profile = Profile.objects.get(id=from_global_id(id)[1])
+        return profile
+
+    @validate_token
+    def resolve_my_profile(self, info):
+        my_user_data = get_user_model().objects.get(
+            email=info.context.user.email)
+        my_profile = Profile.objects.get(related_user=my_user_data)
+        return my_profile
+
+    # タスクのリゾルバー
     def resolve_task(self, info, **kwargs):
         id = kwargs.get('id')
         task = Task.objects.get(id=from_global_id(id)[1])
