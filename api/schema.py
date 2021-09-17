@@ -3,7 +3,6 @@ import asyncio
 import graphene
 import graphql_social_auth
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
 from graphene import relay
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.types import DjangoObjectType
@@ -33,10 +32,12 @@ class ProfileNode(DjangoObjectType):
     class Meta:
         model = Profile
         filter_fields = {
+            'profile_name': ['exact', 'icontains'],
             'self_introduction': ['exact', 'icontains'],
             'github_username': ['exact', 'icontains'],
             'twitter_username': ['exact', 'icontains'],
         }
+        interfaces = (relay.Node, )
 
 
 # タスク
@@ -50,8 +51,8 @@ class TaskNode(DjangoObjectType):
 # プロフィールの作成
 class CreateProfileMutation(relay.ClientIDMutation):
     class Input:
-        user_id = graphene.ID(required=True)
         profile_name = graphene.String(required=True)
+        profile_image = Upload(required=False)
         self_introduction = graphene.String(required=False)
         github_username = graphene.String(required=False)
         twitter_username = graphene.String(required=False)
@@ -61,15 +62,21 @@ class CreateProfileMutation(relay.ClientIDMutation):
     @validate_token
     def mutate_and_get_payload(root, info, **input):
         try:
-            user_id = input.get('user_id')
             profile_name = input.get('profile_name')
+            profile_image = input.get('profile_image')
             self_introduction = input.get('self_introduction')
             github_username = input.get('github_username')
             twitter_username = input.get('twitter_username')
 
+            my_user_id = get_user_model().objects.get(
+                email=info.context.user.email).id
             profile = Profile(related_user=get_user_model().objects.get(
-                id=user_id))
+                id=my_user_id))
 
+            if profile_name is not None:
+                profile.profile_name = profile_name
+            if profile_image != []:
+                profile.profile_image = profile_image
             if self_introduction is not None:
                 profile.self_introduction = self_introduction
             if github_username is not None:
@@ -87,6 +94,7 @@ class UpdateProfileMutation(relay.ClientIDMutation):
     class Input:
         id = graphene.ID(required=True)
         profile_name = graphene.String(required=True)
+        profile_image = Upload(required=False)
         self_introduction = graphene.String(required=False)
         github_username = graphene.String(required=False)
         twitter_username = graphene.String(required=False)
@@ -98,12 +106,17 @@ class UpdateProfileMutation(relay.ClientIDMutation):
         try:
             id = input.get('id')
             profile_name = input.get('profile_name')
+            profile_image = input.get('profile_image')
             self_introduction = input.get('self_introduction')
             github_username = input.get('github_username')
             twitter_username = input.get('twitter_username')
 
             profile = Profile(related_user=get_user_model().objects.get(id=id))
 
+            if profile_name is not None:
+                profile.profile_name = profile_name
+            if profile_image != []:
+                profile.profile_image = profile_image
             if self_introduction is not None:
                 profile.self_introduction = self_introduction
             if github_username is not None:
@@ -170,7 +183,7 @@ class UpdateTaskMutation(relay.ClientIDMutation):
                 task.content = content
             if is_done is not None:
                 task.is_done = is_done
-            if task_image is not None:
+            if task_image != []:
                 task.task_image = task_image[0]
             task.save()
             return UpdateTaskMutation(task=task)
@@ -220,6 +233,7 @@ class Query(graphene.ObjectType):
     # プロフィール
     profile = graphene.Field(ProfileNode, id=graphene.NonNull(graphene.ID))
     my_profile = graphene.Field(ProfileNode)
+    all_profiles = DjangoFilterConnectionField(ProfileNode)
 
     # タスク
     task = graphene.Field(TaskNode, id=graphene.NonNull(graphene.ID))
@@ -251,6 +265,9 @@ class Query(graphene.ObjectType):
             email=info.context.user.email)
         my_profile = Profile.objects.get(related_user=my_user_data)
         return my_profile
+
+    def resolve_all_profiles(self, info, **kwargs):
+        return Profile.objects.all()
 
     # タスクのリゾルバー
     def resolve_task(self, info, **kwargs):

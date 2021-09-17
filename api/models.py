@@ -5,6 +5,17 @@ from django.core.mail import send_mail
 from django.db import models
 
 
+# プロフィール画像のアップロード用関数
+def upload_profile_path(instance, filename):
+    ext = filename.split('.')[-1]
+    return '/'.join([
+        'profile',
+        str(instance.related_user.id) + str(instance.profile_name) + str(".") +
+        str(ext)
+    ])
+
+
+# タスクの画像アップロード用関数
 def upload_task_path(instance, filename):
     ext = filename.split('.')[-1]
     return '/'.join([
@@ -72,6 +83,10 @@ class Profile(models.Model):
                                         on_delete=models.CASCADE)
     # 表示名
     profile_name = models.CharField(max_length=20)
+    # プロフィール画像
+    profile_image = models.ImageField(blank=True,
+                                      null=True,
+                                      upload_to=upload_profile_path)
     # 自己紹介
     self_introduction = models.CharField(max_length=200, null=True, blank=True)
     # GitHubとTwitterのユーザーネーム
