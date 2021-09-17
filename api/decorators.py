@@ -36,6 +36,8 @@ def validate_token(function):
             info.context.user.email = id_info['email']
             return function(root, info, **kwargs)
         except ValueError:
-            raise ValueError('token is invalid')
+            raise
+        except:
+            raise
 
     return validate

@@ -115,7 +115,7 @@ class UpdateProfileMutation(relay.ClientIDMutation):
 
             if profile_name is not None:
                 profile.profile_name = profile_name
-            if profile_image != []:
+            if profile_image != [] and profile_image is not None:
                 profile.profile_image = profile_image
             if self_introduction is not None:
                 profile.self_introduction = self_introduction
@@ -177,18 +177,18 @@ class UpdateTaskMutation(relay.ClientIDMutation):
             is_done = input.get('is_done')
             task_image = input.get('task_image')
             task = Task.objects.get(id=from_global_id(input.get('id'))[1])
-            if title is not None and title != '':
+            if title is not None:
                 task.title = title
             if content is not None:
                 task.content = content
             if is_done is not None:
                 task.is_done = is_done
-            if task_image != []:
+            if task_image != [] and task_image is not None:
                 task.task_image = task_image[0]
             task.save()
             return UpdateTaskMutation(task=task)
         except:
-            raise ValueError('UpdateTaskError')
+            raise
 
 
 # タスクの削除
