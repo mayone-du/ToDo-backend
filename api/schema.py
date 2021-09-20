@@ -98,10 +98,11 @@ class UpdateProfileMutation(relay.ClientIDMutation):
         self_introduction = graphene.String(required=False)
         github_username = graphene.String(required=False)
         twitter_username = graphene.String(required=False)
+        following_users = graphene.List(graphene.ID)
 
     profile = graphene.Field(ProfileNode)
 
-    @validate_token
+    # @validate_token
     def mutate_and_get_payload(root, info, **input):
         try:
             id = input.get('id')
@@ -110,8 +111,9 @@ class UpdateProfileMutation(relay.ClientIDMutation):
             self_introduction = input.get('self_introduction')
             github_username = input.get('github_username')
             twitter_username = input.get('twitter_username')
+            following_users = input.get('following_users')
 
-            profile = Profile(related_user=get_user_model().objects.get(id=id))
+            profile = Profile.objects.get(id=from_global_id(id)[1])
 
             if profile_name is not None:
                 profile.profile_name = profile_name
@@ -123,9 +125,20 @@ class UpdateProfileMutation(relay.ClientIDMutation):
                 profile.github_username = github_username
             if twitter_username is not None:
                 profile.twitter_username = twitter_username
+            
+            # フォローしているユーザーを配列形式で保存
+            if following_users is not None:
+                followings_set = []
+                print(following_users)
+                for user in following_users:
+                    user_id = from_global_id(user)[1]
+                    user_object = get_user_model().objects.get(id=user_id)
+                    followings_set.append(user_object)
+                profile.following_users.set(followings_set)
             profile.save()
             return UpdateProfileMutation(profile=profile)
         except:
+            raise
             raise ValueError('update_profile_error')
 
 

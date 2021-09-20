@@ -40,6 +40,11 @@ class UserManager(BaseUserManager):
                               username=username)
             user.set_password(password)
             user.save(using=self._db)
+
+            # プロフィールモデルの作成
+            profile = Profile(related_user=user, profile_name=email)
+            profile.save()
+
             # ユーザー作成時にメールを送信 superuser作成時はコメントアウト
             send_mail(subject='サンプルアプリ | 本登録のお知らせ',
                       message=f'ユーザー作成時にメール送信しています' + email,
@@ -94,6 +99,11 @@ class Profile(models.Model):
     twitter_username = models.CharField(max_length=30, null=True, blank=True)
     # 自分のWebサイトのURL
     website_url = models.URLField(null=True, blank=True)
+    # フォロー機能 自分がフォローしているユーザーはプロフィールモデルから、フォローされているユーザーはユーザーモデルから逆参照で取得
+    following_users = models.ManyToManyField(settings.AUTH_USER_MODEL,
+                                             related_name='following_users',
+                                             blank=True,
+                                             default=[])
 
     def __str__(self) -> str:
         return self.profile_name
