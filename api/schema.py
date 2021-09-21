@@ -39,6 +39,17 @@ class ProfileNode(DjangoObjectType):
         }
         interfaces = (relay.Node, )
 
+    following_users_count = graphene.Int()
+    followed_users_count = graphene.Int()
+
+    # フォローしているユーザーの人数を返す
+    def resolve_following_users_count(root, info, **kwargs):
+        return root.following_users.all().count()
+
+    # フォローされているユーザーの人数を返す
+    def resolve_followed_users_count(root, info, **kwargs):
+        return root.related_user.following_users.all().count()
+
 
 # タスク
 class TaskNode(DjangoObjectType):
@@ -102,7 +113,7 @@ class UpdateProfileMutation(relay.ClientIDMutation):
 
     profile = graphene.Field(ProfileNode)
 
-    # @validate_token
+    @validate_token
     def mutate_and_get_payload(root, info, **input):
         try:
             id = input.get('id')
@@ -125,7 +136,7 @@ class UpdateProfileMutation(relay.ClientIDMutation):
                 profile.github_username = github_username
             if twitter_username is not None:
                 profile.twitter_username = twitter_username
-            
+
             # フォローしているユーザーを配列形式で保存
             if following_users is not None:
                 followings_set = []
@@ -257,7 +268,8 @@ class Query(graphene.ObjectType):
     # ユーザーのリゾルバー
     def resolve_user(self, info, **kwargs):
         id = kwargs.get('id')
-        return get_user_model().objects.get(id=from_global_id(id)[1])
+        user = get_user_model().objects.get(id=from_global_id(id)[1])
+        return user
 
     def resolve_all_users(self, info, **kwargs):
         return get_user_model().objects.all()
