@@ -39,6 +39,7 @@ class ProfileNode(DjangoObjectType):
         }
         interfaces = (relay.Node, )
 
+    # 100件を超えると一度のクエリで全て取得できない可能性があるため、先に数だけ取得出来るようにしておく
     following_users_count = graphene.Int()
     followed_users_count = graphene.Int()
 
@@ -60,6 +61,7 @@ class TaskNode(DjangoObjectType):
 
 
 # プロフィールの作成
+# TODO: ユーザー作成時にプロフィールも初期化するからいらないかも
 class CreateProfileMutation(relay.ClientIDMutation):
     class Input:
         profile_name = graphene.String(required=True)
@@ -103,12 +105,13 @@ class CreateProfileMutation(relay.ClientIDMutation):
 # プロフィールの更新
 class UpdateProfileMutation(relay.ClientIDMutation):
     class Input:
-        id = graphene.ID(required=True)
-        profile_name = graphene.String(required=True)
+        profile_name = graphene.String(required=False)
+        google_image_url = graphene.String()
         profile_image = Upload(required=False)
         self_introduction = graphene.String(required=False)
         github_username = graphene.String(required=False)
         twitter_username = graphene.String(required=False)
+        website_url = graphene.String(required=False)
         following_users = graphene.List(graphene.ID)
 
     profile = graphene.Field(ProfileNode)
@@ -116,18 +119,22 @@ class UpdateProfileMutation(relay.ClientIDMutation):
     @validate_token
     def mutate_and_get_payload(root, info, **input):
         try:
-            id = input.get('id')
             profile_name = input.get('profile_name')
+            google_image_url = input.get('google_image_url')
             profile_image = input.get('profile_image')
             self_introduction = input.get('self_introduction')
             github_username = input.get('github_username')
             twitter_username = input.get('twitter_username')
             following_users = input.get('following_users')
 
-            profile = Profile.objects.get(id=from_global_id(id)[1])
+            profile_id = get_user_model().objects.get(
+                email=info.context.user.email).related_user.id
+            profile = Profile.objects.get(id=profile_id)
 
             if profile_name is not None:
                 profile.profile_name = profile_name
+            if google_image_url is not None:
+                profile.google_image_url = google_image_url
             if profile_image != [] and profile_image is not None:
                 profile.profile_image = profile_image
             if self_introduction is not None:
@@ -140,7 +147,6 @@ class UpdateProfileMutation(relay.ClientIDMutation):
             # フォローしているユーザーを配列形式で保存
             if following_users is not None:
                 followings_set = []
-                print(following_users)
                 for user in following_users:
                     user_id = from_global_id(user)[1]
                     user_object = get_user_model().objects.get(id=user_id)

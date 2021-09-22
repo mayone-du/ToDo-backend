@@ -88,6 +88,8 @@ class Profile(models.Model):
                                         on_delete=models.CASCADE)
     # 表示名
     profile_name = models.CharField(max_length=20)
+    # もとのGoogleアカウントのデフォルトの画像URL
+    google_image_url = models.URLField()
     # プロフィール画像
     profile_image = models.ImageField(blank=True,
                                       null=True,
@@ -100,10 +102,12 @@ class Profile(models.Model):
     # 自分のWebサイトのURL
     website_url = models.URLField(null=True, blank=True)
     # フォロー機能 自分がフォローしているユーザーはプロフィールモデルから、フォローされているユーザーはユーザーモデルから逆参照で取得
-    following_users = models.ManyToManyField(settings.AUTH_USER_MODEL,
-                                             related_name='following_users',
-                                             blank=True,
-                                             default=[])
+    following_users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='following_users',
+        blank=True,
+        default=[],
+    )
 
     def __str__(self) -> str:
         return self.profile_name
