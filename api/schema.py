@@ -99,7 +99,7 @@ class CreateProfileMutation(relay.ClientIDMutation):
             profile.save()
             return CreateProfileMutation(profile=profile)
         except:
-            raise ValueError('create_profile_error')
+            raise
 
 
 # プロフィールの更新
@@ -156,7 +156,6 @@ class UpdateProfileMutation(relay.ClientIDMutation):
             return UpdateProfileMutation(profile=profile)
         except:
             raise
-            raise ValueError('update_profile_error')
 
 
 # タスクの作成
@@ -185,7 +184,7 @@ class CreateTaskMutation(relay.ClientIDMutation):
             task.save()
             return CreateTaskMutation(task=task)
         except:
-            raise ValueError('CreateTaskError')
+            raise
 
 
 # タスクの更新
@@ -235,7 +234,7 @@ class DeleteTaskMutation(relay.ClientIDMutation):
             task.delete()
             return DeleteTaskMutation(task=task)
         except:
-            raise ValueError('DeleteTaskError')
+            raise
 
 
 # ミューテーション

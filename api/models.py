@@ -42,7 +42,7 @@ class UserManager(BaseUserManager):
             user.save(using=self._db)
 
             # プロフィールモデルの作成
-            profile = Profile(related_user=user, profile_name=email)
+            profile = Profile(related_user=user, profile_name=user.username)
             profile.save()
 
             # ユーザー作成時にメールを送信 superuser作成時はコメントアウト
@@ -53,7 +53,7 @@ class UserManager(BaseUserManager):
                       fail_silently=False)
             return user
         except:
-            raise ValueError('create_user_error')
+            raise
 
     def create_superuser(self, email, password):
         user = self.create_user(email, password)
